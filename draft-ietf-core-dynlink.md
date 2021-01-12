@@ -2,7 +2,7 @@
 title: "Dynamic Resource Linking for Constrained RESTful Environments"
 abbrev: Dynamic Resource Linking for CoRE
 docname: draft-ietf-core-dynlink-latest
-date: 2020-7-13
+date: 2021-1-12
 category: info
 
 ipr: trust200902
@@ -372,7 +372,7 @@ Application Data:
 
 Acknowledgements
 ================
-Acknowledgement is given to colleagues from the SENSEI project who were critical in the initial development of the well-known REST interface concept, to members of the IPSO Alliance where further requirements for interface types have been discussed, and to Szymon Sasin, Cedric Chauvenet, Daniel Gavelle and Carsten Bormann who have provided useful discussion and input to the concepts in this specification. Christian Amsuss supplied a comprehensive review of draft -06. Hannes Tschofenig and Mert Ocak highlighted syntactical corrections in the usage of pmax and pmin in a query. Discussions with Ari Keränen led to the addition of an extra binding method supporting POST operations.
+Acknowledgement is given to colleagues from the SENSEI project who were critical in the initial development of the well-known REST interface concept, to members of the IPSO Alliance where further requirements for interface types have been discussed, and to Szymon Sasin, Cedric Chauvenet, Daniel Gavelle and Carsten Bormann who have provided useful discussion and input to the concepts in this specification. Christian Amsuss supplied a comprehensive review of draft -06. Hannes Tschofenig and Mert Ocak highlighted syntactical corrections in the usage of pmax and pmin in a query. Discussions with Ari Keränen led to the addition of an extra binding method supporting POST operations. Alan Soloway contributed text leading to the inclusion of epmin and epmax. David Navarro proposed allowing for pmax to be equal to pmin. 
 
 Contributors
 ============
@@ -403,6 +403,11 @@ Contributors
 
 Changelog
 =========
+
+draft-ietf-core-dynlink-12
+
+* Attributes epmin and epmax included
+* pmax now can be equal to pmin
 
 draft-ietf-core-dynlink-11
 
