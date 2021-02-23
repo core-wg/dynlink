@@ -2,7 +2,7 @@
 title: "Dynamic Resource Linking for Constrained RESTful Environments"
 abbrev: Dynamic Resource Linking for CoRE
 docname: draft-ietf-core-dynlink-latest
-date: 2021-1-12
+date: 2021-2-22
 category: info
 
 ipr: trust200902
@@ -66,7 +66,7 @@ Terminology     {#terminology}
 
 {::boilerplate bcp14}
 
-This specification requires readers to be familiar with all the terms and concepts that are discussed in {{-link}} and {{RFC6690}}.  This specification makes use of the following additional terminology:
+This specification requires readers to be familiar with all the terms and concepts that are discussed in {{-link}}, {{RFC6690}} and {{RFC7641}}.  This specification makes use of the following additional terminology:
 
 Link Binding:
 : A unidirectional logical link between a source resource and a destination resource, over which state information is synchronized.
@@ -77,62 +77,30 @@ State Synchronization:
 Notification Band:  
 : A resource value range that results in state sychronization.  The value range may be bounded by a minimum and maximum value or may be unbounded having either a minimum or maximum value.
 
-Conditional Notification and Control Attributes        {#binding_attributes}
+Conditional Attributes        {#binding_attributes}
 =============
 
-## Attribute Definitions
+This specification defines conditional attributes, which provide for fine-grained control of notification and state synchronization when using CoRE Observe {{RFC7641}} or Link Bindings (see {{bindings}}). When resource interfaces following this specification are made available over CoAP, the CoAP Observation mechanism {{RFC7641}} MAY also be used to observe any changes in a resource, and receive asynchronous notifications as a result. A resource marked as Observable in its link description SHOULD support these conditional attributes. 
 
-This specification defines Conditional Notification and Control Attributes, which provide for fine-grained control of notification and state synchronization when using CoRE Observe {{RFC7641}} or Link Bindings (see {{bindings}}). Conditional Notification Attributes define the conditions that trigger a notification. Conditional Control Attributes define the cadence of the measurement of the conditions that trigger a notification. 
+Note: In this draft, we assume that there are finite quantization effects in the internal or external updates to the value representing the state of a resource; specifically, that a resource state may be updated at any time with any valid value. We therefore avoid any continuous-time assumptions in the description of the conditional attributes and instead use the phrase "sampled value" to refer to a member of a sequence of values that may be internally observed from the resource state over time.
 
-When resource interfaces following this specification are made available over CoAP, the CoAP Observation mechanism {{RFC7641}} MAY also be used to observe any changes in a resource, and receive asynchronous notifications as a result. A resource marked as Observable in its link description SHOULD support these Conditional Notification and Control Attributes.
+## Conditional Notification Attributes
 
-The set of Notification Attributes defined here allow a client to control how often a client is interested in receiving notifications and how much a resource value should change for the new representation to be interesting. The set of Control Attributes defined here allow a client to control how often the server performs a measurement of the conditions.
+Conditional Notification Attributes define the conditions that trigger a notification. Conditional Notification Attributes SHOULD be evaluated on all potential notifications from a resource, whether resulting from an internal server-driven sampling process or from external update requests to the server. 
 
-One or more Notification Attributes MAY be included as query parameters in an Observe request.
+The set of Conditional Notification Attributes defined here allow a client to control how often a client is interested in receiving notifications and how much a value should change for the new representation state to be interesting. One or more Conditional Notification Attributes MAY be included as query parameters in an Observe request.
 
 Conditional Notification Attributes are defined below:
 
-| Attribute         | Parameter | Value            |
+| Attribute         | Parameter | Value          |
 | --- | --- | --- |
 | Greater Than      | gt       | xs:decimal      |
 | Less Than         | lt       | xs:decimal      |
 | Change Step       | st       | xs:decimal (>0) |
 | Notification Band | band     | xs:boolean      |
+| Edge              | edge     | xs:boolean      |
 {: #notificationattributes title="Conditional Notification Attributes"}
 
-One or more Control Attributes MAY be included as query parameters in an Observe request.
-
-Conditional Control Attributes are defined below:
-
-| Attribute         | Parameter | Value            |
-| --- | --- | --- |
-| Minimum Period (s)| pmin      | xs:decimal (>0) |
-| Maximum Period (s)| pmax      | xs:decimal (>0) |
-| Minimum Evaluation Period (s)| epmin      | xs:decimal (>0) |
-| Maximum Evaluation Period (s)| epmax      | xs:decimal (>0) |
-{: #controlattributes title="Conditional Control Attributes"}
-
-Conditional Notification Attributes SHOULD be evaluated on all potential notifications from a resource, whether resulting from an internal server-driven sampling process or from external update requests to the server. Conditional Control Attributes are used to configure the internal server-driven sampling process for performing measurements of the conditions of a resource. 
-
-Note: In this draft, we assume that there are finite quantization effects in the internal or external updates to the value of a resource; specifically, that a resource may be updated at any time with any valid value. We therefore avoid any continuous-time assumptions in the description of the Conditional Notification Attributes and instead use the phrase "sampled value" to refer to a member of a sequence of values that may be internally observed from the resource state over time.
- 
-###Minimum Period (pmin) {#pmin}
-
-When present, the minimum period indicates the minimum time, in seconds, between two consecutive notifications (whether or not the resource value has changed). In the absence of this parameter, the minimum period is up to the server. The minimum period MUST be greater than zero otherwise the receiver MUST return a CoAP error code 4.00 "Bad Request" (or equivalent).
-
-A server MAY report the last sampled value that occured during the pmin interval, after the pmin interval expires. 
-
-Note: Due to finite quantization effects, the time between notifications may be greater than pmin even when the sampled value changes within the pmin interval. Pmin may or may not be used to drive the internal sampling process.
-
-###Maximum Period (pmax) {#pmax}
-When present, the maximum period indicates the maximum time, in seconds, between two consecutive notifications (whether or not the resource value has changed). In the absence of this parameter, the maximum period is up to the server. The maximum period MUST be greater than zero and MUST be greater than, or equal to, the minimum period parameter (if present) otherwise the receiver MUST return a CoAP error code 4.00 "Bad Request" (or equivalent).
-
-###Change Step (st) {#st}
-When present, the change step indicates how much the value of a resource SHOULD change before triggering a notification, compared to the value of the previous notification. Upon reception of a query including the st attribute, the most recently sampled value of the resource is reported, and then set as the last reported value (last_rep_v). When a subsequent sample or update of the resource value differs from the last reported value by an amount, positive or negative, greater than or equal to st, and the time for pmin has elapsed since the last notification, a notification is sent and the last reported value is updated to the value sent in the notification. The change step MUST be greater than zero otherwise the receiver MUST return a CoAP error code 4.00 "Bad Request" (or equivalent).
-
-The Change Step parameter can only be supported on resources with a scalar numeric value. 
-
-Note: Due to sampling and other constraints, e.g. pmin, the resource value received in two sequential notifications may differ by more than st.
 
 ###Greater Than (gt) {#gt}
 When present, Greater Than indicates the upper limit value the sampled value SHOULD cross before triggering a notification. A notification is sent whenever the sampled value crosses the specified upper limit value, relative to the last reported value, and the time fpr pmin has elapsed since the last notification. The sampled value is sent in the notification. If the value continues to rise, no notifications are generated as a result of gt. If the value drops below the upper limit value then a notification is sent, subject again to the pmin time. 
@@ -140,13 +108,20 @@ When present, Greater Than indicates the upper limit value the sampled value SHO
 The Greater Than parameter can only be supported on resources with a scalar numeric value. 
 
 ###Less Than (lt) {#lt}
-When present, Less Than indicates the lower limit value the resource value SHOULD cross before triggering a notification. A notification is sent when the samples value crosses the specified lower limit value, relative to the last reported value, and the time fpr pmin has elapsed since the last notification. The sampled value is sent in the notification. If the value continues to fall no notifications are generated as a result of lt. If the value rises above the lower limit value then a new notification is sent, subject to the pmin time.. 
+When present, Less Than indicates the lower limit value the resource value SHOULD cross before triggering a notification. A notification is sent when the samples value crosses the specified lower limit value, relative to the last reported value, and the time fpr pmin has elapsed since the last notification. The sampled value is sent in the notification. If the value continues to fall no notifications are generated as a result of lt. If the value rises above the lower limit value then a new notification is sent, subject to the pmin time. 
 
 The Less Than parameter can only be supported on resources with a scalar numeric value. 
 
+###Change Step (st) {#st}
+When present, the change step indicates how much the value representing a resource state SHOULD change before triggering a notification, compared to the old state. Upon reception of a query including the st attribute, the current resource state representing the most recently sampled value is reported, and then set as the last reported value (last_rep_v). When a subsequent sampled value or update of the resource state differs from the last reported state by an amount, positive or negative, greater than or equal to st, and the time for pmin has elapsed since the last notification, a notification is sent and the last reported value is updated to the new resource state sent in the notification. The change step MUST be greater than zero otherwise the receiver MUST return a CoAP error code 4.00 "Bad Request" (or equivalent).
+
+The Change Step parameter can only be supported on resource states represented with a scalar numeric value. 
+
+Note: Due to sampling and other constraints, e.g. pmin, the change in resource states received in two sequential notifications may differ by more than st.
+
 ###Notification Band (band) {#band}
 
-The notification band attribute allows a bounded or unbounded (based on a minimum or maximum) value range that may trigger multiple notifications. This enables use cases where different ranges results in differing behaviour. For example: monitoring the temperature of machinery. Whilst the temperature is in the normal operating range only periodic observations are needed. However as the temperature moves to more abnormal ranges more frequent synchronization/reporting may be needed.
+The notification band attribute allows a bounded or unbounded (based on a minimum or maximum) value range that may trigger multiple notifications. This enables use cases where different ranges results in differing behaviour. For example, in monitoring the temperature of machinery, whilst the temperature is in the normal operating range, only periodic updates are needed. However as the temperature moves to more abnormal ranges more frequent state updates may be sent to clients.
 
 Without a notification band, a transition across a less than (lt), or greater than (gt) limit only generates one notification.  This means that it is not possible to describe a case where multiple notifications are sent so long as the limit is exceeded.
 
@@ -164,6 +139,42 @@ If the band is specified in which the value of gt is greater than that of lt, ou
 
 The Notification Band parameter can only be supported on resources with a scalar numeric value. 
 
+###Edge (edge) {#edge}
+
+When present, the Edge attribute indicates interest for receiving notifications of either the falling edge or the rising edge transition of a boolean resource state. When the value of the Edge attribute is 0, the server notifies the client each time a resource state changes from True to False. When the value of the Edge attribute is 1, the server notifies the client each time a resource state changes from False to True. 
+
+The Edge attribute can only be supported on resources with a boolean value.
+
+## Conditional Control Attributes
+
+
+Conditional Control Attributes define the time intervals between consecutive notifications as well as the cadence of the measurement of the conditions that trigger a notification. Conditional Control Attributes can be used to configure the internal server-driven sampling process for performing measurements of the conditions of a resource. One or more Conditional Control Attributes MAY be included as query parameters in an Observe request.
+
+Conditional Control Attributes are defined below:
+
+| Attribute                    | Parameter  | Value           |
+| --- | --- | --- |
+| Minimum Period (s)           | pmin       | xs:decimal (>0) |
+| Maximum Period (s)           | pmax       | xs:decimal (>0) |
+| Minimum Evaluation Period (s)| epmin      | xs:decimal (>0) |
+| Maximum Evaluation Period (s)| epmax      | xs:decimal (>0) |
+| Confirmable Notification     | con        | xs:boolean      |
+{: #controlattributes title="Conditional Control Attributes"}
+
+
+
+ 
+###Minimum Period (pmin) {#pmin}
+
+When present, the minimum period indicates the minimum time, in seconds, between two consecutive notifications (whether or not the resource state has changed). In the absence of this parameter, the minimum period is up to the server. The minimum period MUST be greater than zero otherwise the receiver MUST return a CoAP error code 4.00 "Bad Request" (or equivalent).
+
+A server MAY update the resource state with the last sampled value that occured during the pmin interval, after the pmin interval expires. 
+
+Note: Due to finite quantization effects, the time between notifications may be greater than pmin even when the sampled value changes within the pmin interval. Pmin may or may not be used to drive the internal sampling process.
+
+###Maximum Period (pmax) {#pmax}
+When present, the maximum period indicates the maximum time, in seconds, between two consecutive notifications (whether or not the resource state has changed). In the absence of this parameter, the maximum period is up to the server. The maximum period MUST be greater than zero and MUST be greater than, or equal to, the minimum period parameter (if present) otherwise the receiver MUST return a CoAP error code 4.00 "Bad Request" (or equivalent).
+
 ###Minimum Evaluation Period (epmin) {#epmin}
 
 When present, the minimum evaluation period indicates the minimum time, in seconds, the client recommends to the server to wait between two consecutive measurements of the conditions of a resource since the client has no interest in the server doing more frequent measurements. When the minimum evaluation period expires after the previous measurement, the server MAY immediately perform a new measurement. In the absence of this parameter, the minimum evaluation period is not defined and thus not used by the server. The server MAY use pmin, if defined, as a guidance on the desired measurement cadence. The minimum evaluation period MUST be greater than zero otherwise the receiver MUST return a CoAP error code 4.00 "Bad Request" (or equivalent).
@@ -172,9 +183,14 @@ When present, the minimum evaluation period indicates the minimum time, in secon
 
 When present, the maximum evaluation period indicates the maximum time, in seconds, the server MAY wait between two consecutive measurements of the conditions of a resource. When the maximum evaluation period expires after the previous measurement, the server MUST immediately perform a new measurement. In the absence of this parameter, the maximum evaluation period is not defined and thus not used by the server. The maximum evaluation period MUST be greater than zero and MUST be greater than the minimum evaluation period parameter (if present) otherwise the receiver MUST return a CoAP error code 4.00 "Bad Request" (or equivalent).
 
-## Server processing of Conditional Notification Attributes
+###Confirmable Notification (con) {#con}
 
-Pmin, pmax, st, gt, lt and band may be present in the same query. However, they are not defined at multiple prioritization levels. The server sends a notification whenever any of the parameter conditions are met, upon which it updates its last notification value and time to prepare for the next notification. Only one notification occurs when there are multiple conditions being met at the same time. The reference code below illustrates the logic to determine when a notification is to be sent.
+When present with a value of 1 in a query, the con attribute indicates a notification MUST be confirmable, i.e., the server MUST send the notification in a confirmable CoAP message, to request an acknowledgement from the client. When present with a value of 0 in a query, the con attribute indicates a notification can be confirmable or non-confirmable, i.e., it can be sent in a confirmable or a non-confirmable CoAP message.
+
+
+## Server processing of Conditional Attributes
+
+Conditional Notification Attributes and Conditional Control Attributes may be present in the same query. However, they are not defined at multiple prioritization levels. The server sends a notification whenever any of the parameter conditions are met, upon which it updates its last notification value and time to prepare for the next notification. Only one notification occurs when there are multiple conditions being met at the same time. The reference code below illustrates the logic to determine when a notification is to be sent.
 
 ~~~~
 bool notifiable( Resource * r ) {
@@ -323,6 +339,8 @@ Additional operations on the Binding Table can be specified in future documents.
 Implementation Considerations   {#Implementation}
 =======================
 
+When pmax and pmin are equal, the expected behaviour is that notifications will be sent every (pmin == pmax) seconds. However, these notifications can only be fulfilled by the server on a best effort basis. Because pmin and pmax are designed as acceptable tolerance bounds for sending state updates, a query from an interested client containing equal pmin and pmax values must not be seen as a hard real-time scheduling contract between the client and the server.
+
 When using multiple resource bindings (e.g. multiple Observations of resource) with different bands, consideration should be given to the resolution of the resource value when setting sequential bands. For example: Given BandA (Abmn=10, Bbmx=20) and BandB (Bbmn=21, Bbmx=30). If the resource value returns an integer then notifications for values between and inclusive of 10 and 30 will be triggered. Whereas if the resolution is to one decimal point (0.1) then notifications for values 20.1 to 20.9 will not be triggered.
 
 The use of the notification band minimum and maximum allow for a synchronization whenever a change in the resource value occurs. Theoretically this could occur in-line with the server internal sample period or the configuration of epmin and epmax values for determining the resource value. Implementors SHOULD consider the resolution needed before updating the resource, e.g. updating the resource when a temperature sensor value changes by 0.001 degree versus 1 degree.
@@ -403,6 +421,13 @@ Contributors
 
 Changelog
 =========
+
+draft-ietf-core-dynlink-13
+
+* Conditional Atttributes section restructured
+* "edge" and "con" attributes added
+* Implementation considerations, clarifications added when pmax == pmin
+* rewritten to remove talk of server reporting values to clients
 
 draft-ietf-core-dynlink-12
 
